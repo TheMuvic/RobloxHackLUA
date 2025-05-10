@@ -11,6 +11,7 @@ local VU = game:GetService("VirtualUser")
 local settings = {
     ToggleAFK = Enum.KeyCode.Eight, -- клавиша 8
     ToggleFly = Enum.KeyCode.F, -- клавиша F
+    IncreaseSpeed = Enum.KeyCode.LeftShift -- клавиша Shift для увеличения скорости
 }
 
 -- ==== GUI ====
@@ -52,7 +53,8 @@ end
 
 -- ==== ПОЛЁТ ====
 local flying = false
-local speed = 50
+local speed = 50 -- стандартная скорость
+local maxSpeed = 100 -- максимальная скорость
 local moveVector = Vector3.zero
 local keys = {
     Forward = false, Left = false, Backward = false, Right = false,
@@ -133,7 +135,10 @@ UIS.InputBegan:Connect(function(input, processed)
     if code == Enum.KeyCode.S then keys.Backward = true end
     if code == Enum.KeyCode.D then keys.Right = true end
     if code == Enum.KeyCode.Space then keys.Up = true end
-    if code == Enum.KeyCode.LeftShift then keys.Down = true end
+    if code == Enum.KeyCode.LeftShift then
+        keys.Down = true
+        speed = maxSpeed -- Увеличиваем скорость, если Shift нажата
+    end
 end)
 
 UIS.InputEnded:Connect(function(input)
@@ -143,5 +148,8 @@ UIS.InputEnded:Connect(function(input)
     if code == Enum.KeyCode.S then keys.Backward = false end
     if code == Enum.KeyCode.D then keys.Right = false end
     if code == Enum.KeyCode.Space then keys.Up = false end
-    if code == Enum.KeyCode.LeftShift then keys.Down = false end
+    if code == Enum.KeyCode.LeftShift then
+        keys.Down = false
+        speed = 50 -- Снижаем скорость до стандартной при отпускании Shift
+    end
 end)
