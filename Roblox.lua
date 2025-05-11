@@ -9,28 +9,49 @@ local VU = game:GetService("VirtualUser")
 
 -- ==== НАСТРОЙКИ КЛАВИШ ====
 local settings = {
-    ToggleAFK = Enum.KeyCode.Eight, -- клавиша 8
-    ToggleFly = Enum.KeyCode.F, -- клавиша F
-    IncreaseSpeed = Enum.KeyCode.LeftShift -- клавиша Shift для увеличения скорости
+    ToggleAFK = Enum.KeyCode.Eight,
+    ToggleFly = Enum.KeyCode.F,
+    IncreaseSpeed = Enum.KeyCode.LeftShift,
+    SuperSpeed = Enum.KeyCode.LeftControl
 }
 
--- ==== GUI ====
+-- ==== GUI (красивая панель) ====
 local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 screenGui.Name = "AutoFlyAFKGui"
 screenGui.ResetOnSpawn = false
 
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 300, 0, 110)
+mainFrame.Position = UDim2.new(0, 20, 0, 20)
+mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+mainFrame.BackgroundTransparency = 0.3
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = screenGui
+
+local uiCorner = Instance.new("UICorner")
+uiCorner.CornerRadius = UDim.new(0, 12)
+uiCorner.Parent = mainFrame
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, 0, 0, 30)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "🚀 Auto Fly + Anti-AFK"
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextSize = 18
+titleLabel.Parent = mainFrame
+
 local statusLabel = Instance.new("TextLabel")
-statusLabel.Size = UDim2.new(0, 300, 0, 100)
-statusLabel.Position = UDim2.new(0, 20, 0, 20)
-statusLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-statusLabel.TextStrokeTransparency = 0
-statusLabel.Font = Enum.Font.SourceSansBold
-statusLabel.TextSize = 18
+statusLabel.Size = UDim2.new(1, -10, 1, -30)
+statusLabel.Position = UDim2.new(0, 5, 0, 30)
+statusLabel.BackgroundTransparency = 1
+statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+statusLabel.Font = Enum.Font.Gotham
+statusLabel.TextSize = 16
 statusLabel.TextXAlignment = Enum.TextXAlignment.Left
 statusLabel.TextYAlignment = Enum.TextYAlignment.Top
 statusLabel.Text = "Загрузка..."
-statusLabel.Parent = screenGui
+statusLabel.Parent = mainFrame
 
 -- ==== АНТИ-АФК ====
 local antiAFKEnabled = false
@@ -38,23 +59,24 @@ local function toggleAFK()
     antiAFKEnabled = not antiAFKEnabled
     if antiAFKEnabled then
         VU:Button2Down(Vector2.new())
-        wait(1)
+        task.wait(1)
         VU:Button2Up(Vector2.new())
         player.Idled:Connect(function()
             if antiAFKEnabled then
                 VU:Button2Down(Vector2.new())
-                wait(1)
+                task.wait(1)
                 VU:Button2Up(Vector2.new())
             end
         end)
     end
-    updateStatus() -- Обновляем статус
+    updateStatus()
 end
 
 -- ==== ПОЛЁТ ====
 local flying = false
-local speed = 50 -- стандартная скорость
-local maxSpeed = 100 -- максимальная скорость
+local speed = 50
+local maxSpeed = 100
+local superSpeed = 200
 local moveVector = Vector3.zero
 local keys = {
     Forward = false, Left = false, Backward = false, Right = false,
@@ -100,28 +122,30 @@ local function startFlying()
         end
     end)
 
-    updateStatus() -- Обновляем статус
+    updateStatus()
 end
 
 local function stopFlying()
     flying = false
     if bv then bv:Destroy() end
     if bg then bg:Destroy() end
-    updateStatus() -- Обновляем статус
+    updateStatus()
 end
 
 local function toggleFly()
     if flying then stopFlying() else startFlying() end
 end
 
--- ==== ОБНОВЛЕНИЕ ТЕКСТА ====
+-- ==== ОБНОВЛЕНИЕ СТАТУСА ====
 function updateStatus()
-    -- Изменяем текст на кнопке в зависимости от состояния
-    statusLabel.Text = "[F] Полёт: " .. (flying and "ВКЛЮЧЕНО" or "ВЫКЛЮЧЕНО") .. "\n[8] Анти-АФК: " .. (antiAFKEnabled and "ВКЛЮЧЕНО" or "ВЫКЛЮЧЕНО")
+    statusLabel.Text = 
+        "[F] Полёт: " .. (flying and "ВКЛЮЧЕН" or "ВЫКЛЮЧЕН") ..
+        "\n[8] Анти-АФК: " .. (antiAFKEnabled and "ВКЛЮЧЕН" or "ВЫКЛЮЧЕН") ..
+        "\n[Shift] Ускорение, [Ctrl] Супер-бег"
 end
 updateStatus()
 
--- ==== Управление ====
+-- ==== УПРАВЛЕНИЕ ====
 UIS.InputBegan:Connect(function(input, processed)
     if processed then return end
     local code = input.KeyCode
@@ -129,27 +153,35 @@ UIS.InputBegan:Connect(function(input, processed)
     if code == settings.ToggleFly then toggleFly() end
     if code == settings.ToggleAFK then toggleAFK() end
 
-    -- Движение
     if code == Enum.KeyCode.W then keys.Forward = true end
     if code == Enum.KeyCode.A then keys.Left = true end
     if code == Enum.KeyCode.S then keys.Backward = true end
     if code == Enum.KeyCode.D then keys.Right = true end
     if code == Enum.KeyCode.Space then keys.Up = true end
-    if code == Enum.KeyCode.LeftShift then
+
+    if code == settings.IncreaseSpeed then
         keys.Down = true
-        speed = maxSpeed -- Увеличиваем скорость, если Shift нажата
+        speed = maxSpeed
+    end
+    if code == settings.SuperSpeed then
+        speed = superSpeed
     end
 end)
 
 UIS.InputEnded:Connect(function(input)
     local code = input.KeyCode
+
     if code == Enum.KeyCode.W then keys.Forward = false end
     if code == Enum.KeyCode.A then keys.Left = false end
     if code == Enum.KeyCode.S then keys.Backward = false end
     if code == Enum.KeyCode.D then keys.Right = false end
     if code == Enum.KeyCode.Space then keys.Up = false end
-    if code == Enum.KeyCode.LeftShift then
+
+    if code == settings.IncreaseSpeed then
         keys.Down = false
-        speed = 50 -- Снижаем скорость до стандартной при отпускании Shift
+        speed = 50
+    end
+    if code == settings.SuperSpeed then
+        speed = 50
     end
 end)
